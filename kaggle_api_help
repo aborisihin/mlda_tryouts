@@ -1,0 +1,7 @@
+# list all competitions
+kaggle competitions list
+
+# download competition files
+# default location:
+# /Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/
+kaggle competitions download -c <comp_name> -p <comp_path>
