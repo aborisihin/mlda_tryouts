@@ -32,4 +32,6 @@ Tryouts in machine learning and data analysis.
   Machine learning models implementation.
   
   - mc_online_logreg<br>
-  Multiclass online logistic regression model.
+  Multiclass online logistic regression model.<br>
+  Реализованная в рамках курса OpenDataScience модель мультиклассовой классификации, выполняющая онлайн-обучение
+  (логистическая регрессия со стохастическим градиентным спуском) на специально подготовленном датасете. 
