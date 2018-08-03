@@ -1,0 +1,1 @@
+{"data_dir": "./../../data/tryouts/stackoverflow_125k/", "data_file": "stackoverflow_sample_125k.tsv", "top_tags_count": 10, "top_tags_file": "top_tags.tsv", "train_size": 0.8, "train_file": "train.tsv", "test_file": "test.tsv"}
