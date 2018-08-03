@@ -1,7 +1,7 @@
 # mlda_tryouts
 Tryouts in machine learning and data analysis.
 
-* brazil_rains
+* [brazil_rains](./brazil_rains)
 
   OpenDataScience capstone project. Rains prediction in Brazil. Work in progress!<br>
   Индивидуальный проект на курсе OpenDataScience (весна 2018). Сдан был частично, работа над проектом продолжается.
@@ -31,6 +31,6 @@ Tryouts in machine learning and data analysis.
 
   Machine learning models implementation.
   
-  - mlmc_online_logreg<br>
+  - mlmc_online_logreg (work in progress!)<br>
   Multilabel/multiclass online logistic regression model.<br>
   Реализованная по мотивам задания курса OpenDataScience модель multilabel/multiclass классификации, выполняющая онлайн-обучение (стохастический градиентный спуск с логистической функцией потерь). Рассматривается задача классификации текстов. В качестве примера взят датасет вопросов на stackoverflow, задачей стоит предсказание тегов вопросов.
