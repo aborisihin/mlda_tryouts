@@ -84,7 +84,7 @@ class OnlineLogisticRegression():
         self.gamma_ = gamma
         self.store_frequency_ = store_frequency
         self.tolerance_ = tolerance
-        
+
     
     def fit(self, datasource, update_vocab=True, return_train_loss=False):
         """Fit/update the model by passing the datasource
@@ -123,17 +123,15 @@ class OnlineLogisticRegression():
             if len(sample_tags) == 0:
                 continue
 
-            # значение функции потерь для текущего примера
+            # словарь z и значение функции потерь для текущего примера
+            z_dict = dict()
             sample_loss = 0
 
-            # градиентный спуск для каждого тега
+            # посчитаем линейные комбинации весов и признаков z для каждого тега
             for tag in self.tags_:
-                
-                # целевая переменная
-                y = int(tag in sample_tags)
 
-                # инициализируем z (линейная комбинация весов и признаков объекта) смещением
-                z = self.w0_[tag]
+                # инициализируем z смещением
+                z_dict[tag] = self.w0_[tag]
 
                 # чтобы не пробегать словарь на каждой строчке в процессе обучения, линейная 
                 # комбинация весов и признаков z рассчитывается как сумма весов модели для 
@@ -149,23 +147,19 @@ class OnlineLogisticRegression():
                         else:
                             continue
 
-                    z += self.w_[tag][self.vocab_[word]]
+                    z_dict[tag] += self.w_[tag][self.vocab_[word]]
 
-                # вычисляем сигмоид (фактически, это вероятность наличия тега);
-                # чтобы не столкнуться с overflow, избегаем вычисления экспоненты 
-                # с очень большим по модулю положительным аргументом
-                if z >= 0:
-                    sigma = 1 / (1 + np.exp(-z))
-                else:
-                    sigma = 1 - 1 / (1 + np.exp(z))
+            # градиентный спуск для каждого тега
+            for tag in self.tags_:
+                
+                # целевая переменная
+                y = int(tag in sample_tags)
 
-                # обновляем значение функции потерь для текущего примера;
-                # чтобы не получить потери точности, избегаем вычисления логарифма с
-                # близким к 0 или 1 аргументом, используя порог tolerance
-                if y == 1:
-                    sample_loss += -1 * np.log(np.max([sigma, self.tolerance_]))
-                else:
-                    sample_loss += -1 * np.log(1 - np.min([1 - self.tolerance_, sigma]))
+                # вычисляем сигмоид (фактически, это вероятность наличия тега)
+                sigma = self.get_sigma(z_dict, tag)
+
+                # обновляем значение функции потерь для текущего примера
+                sample_loss += self.get_sample_loss(y, sigma)
 
                 # обновим параметры модели
                 
@@ -203,6 +197,7 @@ class OnlineLogisticRegression():
                 # смещение не регуляризируется
                 self.w0_[tag] -= self.learning_rate_ * 1.0 * dHdw
 
+            # функция потерь для текущего примера
             self.loss_.append(sample_loss)
 
             # обновим частотный словарь
@@ -210,6 +205,79 @@ class OnlineLogisticRegression():
                 self.train_frequency_dict_ += Counter([self.vocab_[word] for word in word_sentence])
                 
         return self
+
+
+    def get_sigma(self, z_dict, tag):
+        """Calculate sigmoid
+        Вычисление сигмоида по линейной комбинации весов и признаков.
+
+        Parameters
+        ----------
+        z_dict : {string: float}
+            Словарь значений линейной комбинации весов и признаков для тегов.
+
+        tag : string
+            Текущий тег.
+
+        Returns
+        -------
+        float
+            Возвращает значение сигмоида.
+        """
+
+        # чтобы не столкнуться с overflow, избегаем вычисления экспоненты 
+        # с очень большим по модулю положительным аргументом
+        if self.strategy_ == 'ovr':
+
+            z = z_dict[tag]
+            if z >= 0:
+                return 1 / (1 + np.exp(-z))
+            else:
+                return 1 - 1 / (1 + np.exp(z))
+
+        elif self.strategy_ == 'multinomial':
+
+            np_z = np.array(list(z_dict.values()))
+            max_z = np.max(np_z)
+            np_z = np_z - max_z
+
+            return np.exp(z_dict[tag] - max_z) / np.sum(np.exp(np_z))
+
+
+    def get_sample_loss(self, y, sigma):
+        """Calculate sample loss comonent
+        Вычисление слагаемого функции потерь.
+
+        Parameters
+        ----------
+        y : int
+            Признак наличия тега (0, 1).
+
+        sigma:
+            Значение функции сигмоида.
+
+        Returns
+        -------
+        float
+            Возвращает значение слагаемого функции потерь
+        """
+
+        # чтобы не получить потери точности, избегаем вычисления логарифма с
+        # близким к 0 или 1 аргументом, используя порог tolerance
+
+        if self.strategy_ == 'ovr':
+
+            if y == 1:
+                return -1 * np.log(np.max([sigma, self.tolerance_]))
+            else:
+                return -1 * np.log(1 - np.min([1 - self.tolerance_, sigma]))
+
+        elif self.strategy_ == 'multinomial':
+
+            if y == 1:
+                return np.log(np.max([sigma, self.tolerance_]))
+            else:
+                return 0.0
 
 
     def filter_vocab(self, n=10000):
@@ -258,27 +326,27 @@ class OnlineLogisticRegression():
             Итерируемый объект. Способен возвращать список кортежей вида (<тег>, <вероятность>)
         """
         for line in datasource:
-        
+
             sentence = line.strip().split(' ')
             line_predicted = []
 
+            # словарь z для текущего примера
+            z_dict = dict()
+
+            # посчитаем линейные комбинации весов и признаков z для каждого тега
             for tag in self.tags_:
-                # расчитываем значение линейной комбинации весов и признаков объекта
-                z = self.w0_[tag]
+
+                z_dict[tag] = self.w0_[tag]
 
                 for word in sentence:
                     if word not in self.vocab_:
                         continue
-                    z += self.w_[tag][self.vocab_[word]] * 1.0
+                    z_dict[tag] += self.w_[tag][self.vocab_[word]]
 
-                # вычисляем вероятность наличия тега
-                if z >= 0:
-                    sigma = 1 / (1 + np.exp(-z))
-                else:
-                    sigma = 1 - 1 / (1 + np.exp(z))
-
-                line_predicted.append((tag, sigma))
-                
+            # вычисляем вероятность наличия тега
+            for tag in self.tags_:
+                line_predicted.append((tag, self.get_sigma(z_dict, tag)))
+            
             yield line_predicted
     
     
