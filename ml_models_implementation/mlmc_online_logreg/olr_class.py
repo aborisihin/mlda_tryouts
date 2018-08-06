@@ -4,7 +4,7 @@ Contains OnlineLogisticRegression class.
 
 import numpy as np
 
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 __all__ = ['OnlineLogisticRegression']
 
@@ -61,8 +61,8 @@ class OnlineLogisticRegression():
     w0_ : dict {string: float}
         Mapping тегов в веса w0 (смещения).
 
-    train_frequency_dict_ : Counter
-        Counter-объект {<численный_индекс_признака>: <число_вхождений>}. Выполняет подсчет числа
+    train_frequency_dict_ : defaultdict {int: int}
+        Словарь {<численный_индекс_признака>: <число_вхождений>}. Выполняет подсчет числа
         вхождений признака на всей тренировочной выборке.
 
     loss_ : [double]
@@ -74,7 +74,7 @@ class OnlineLogisticRegression():
         self.vocab_ = {}
         self.w_ = {t: defaultdict(int) for t in tags}
         self.w0_ = {t: 0.0 for t in tags}
-        self.train_frequency_dict_ = Counter()
+        self.train_frequency_dict_ = defaultdict(int)
         self.loss_ = []
 
         self.tags_ = set(tags)
@@ -148,6 +148,10 @@ class OnlineLogisticRegression():
 
                     z_dict[tag] += self.w_[tag][self.vocab_[word]]
 
+                    # обновление частотного словаря
+                    if self.store_frequency_ & update_vocab:
+                        self.train_frequency_dict_[self.vocab_[word]] += 1
+
             # градиентный спуск для каждого тега
             for tag in self.tags_:
 
@@ -198,10 +202,6 @@ class OnlineLogisticRegression():
 
             # функция потерь для текущего примера
             self.loss_.append(sample_loss)
-
-            # обновим частотный словарь
-            if self.store_frequency_ & update_vocab:
-                self.train_frequency_dict_ += Counter([self.vocab_[word] for word in word_sentence])
 
         return self
 
@@ -272,17 +272,17 @@ class OnlineLogisticRegression():
         elif self.strategy_ == 'multinomial':
 
             if y == 1:
-                return np.log(np.max([sigma, self.tolerance_]))
+                return -1 * np.log(np.max([sigma, self.tolerance_]))
             else:
                 return 0.0
 
-    def filter_vocab(self, n=10000):
+    def filter_vocab(self, top=10000):
         """ Filtering vocabulary by the top-n words (for all classes)
         Отбор топ-n самых популярных слов в словаре (для всех тегов)
 
         Parameters
         ----------
-        n : int, default=10000
+        top : int, default=10000
             количество слов для отбора
 
         Returns
@@ -294,7 +294,8 @@ class OnlineLogisticRegression():
             print('can\'t filter vocabulary case no frequency data')
             return
 
-        top_words = {k for (k, v) in self.train_frequency_dict_.most_common(n)}
+        sorted_frequency_dict = sorted(self.train_frequency_dict_.items(), key=lambda x: x[1], reverse=True)
+        top_words = {k for (idx, (k, v)) in enumerate(sorted_frequency_dict) if idx < top}
 
         # обновим словарь
         self.vocab_ = {key: val for (key, val) in self.vocab_.items() if val in top_words}
