@@ -4,7 +4,7 @@
 	"top_tags_count": 10, 
 	"top_tags_file": "top_tags.tsv", 
 	"filtered_tmp_file": "so_125k_filtered.tsv",
-	"train_size": 0.1, 
+	"train_size": 0.8, 
 	"train_file": "train.tsv", 
 	"test_file": "test.tsv",
 	"test_labels_file": "test_labels.tsv"
