@@ -6,6 +6,7 @@
 	"filtered_tmp_file": "so_10k_filtered.tsv",
 	"train_size": 0.8, 
 	"train_file": "train.tsv", 
+	"train_labels_file": "train_labels.tsv",
 	"test_file": "test.tsv",
 	"test_labels_file": "test_labels.tsv"
 }

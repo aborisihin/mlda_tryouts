@@ -85,15 +85,19 @@ class OnlineLogisticRegression():
         self.store_frequency_ = store_frequency
         self.tolerance_ = tolerance
 
-    def fit(self, datasource, update_vocab=True, return_train_loss=False):
+    def fit(self, datasource, labels_datasource, update_vocab=True, return_train_loss=False):
         """Fit/update the model by passing the datasource
         Обучение/дообучение модели одним проходом по источнику данных.
 
         Parameters
         ----------
         datasource : iterable
-            Итерируемый объект как источник данных. Спсобен возвращать кортежи вида
-            (<строка_классификации>, <список_тегов>). Теги разделены пробелом.
+            Итерируемый объект как источник данных. Способен возвращать объекты выборки
+            (обучающие строки).
+
+        labels_datasource : iterable
+            Итерируемый объект как источник данных. Способен возвращать список тегов
+            объектов выборки.
 
         update_vocab : bool, default=True
             Флаг режима добавления слов в словарь (признаковое пространство) во время обучения.
@@ -108,13 +112,10 @@ class OnlineLogisticRegression():
         """
         self.loss_ = []
 
-        for input_tuple in datasource:
+        for (word_sentence, sample_tags) in zip(datasource, labels_datasource):
 
-            if len(input_tuple) < 2:
-                continue
-
-            word_sentence = input_tuple[0].split(' ')
-            sample_tags = set(input_tuple[1].split(' '))
+            word_sentence = word_sentence.split(' ')
+            sample_tags = set(sample_tags)
 
             # отбор только известных тегов
             sample_tags = sample_tags & self.tags_
