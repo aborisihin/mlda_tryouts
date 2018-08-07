@@ -1,6 +1,14 @@
 # mlda_tryouts
 Tryouts in machine learning and data analysis.
 
+* ml_models_implementation
+
+  Machine learning models implementation.
+  
+  - [mlmc_online_logreg](./ml_models_implementation/mlmc_online_logreg)<br>
+  Multilabel/multiclass online logistic regression model.<br>
+  Реализованная по мотивам задания курса OpenDataScience модель multilabel/multiclass классификации, выполняющая онлайн-обучение (стохастический градиентный спуск с логистической функцией потерь). Рассматривается задача классификации текстов. В качестве примера взят датасет вопросов на stackoverflow, задачей стоит предсказание тегов вопросов. [Описание задачи](./ml_models_implementation/mlmc_online_logreg/description.ipynb).
+
 * [brazil_rains](./brazil_rains)
 
   OpenDataScience capstone project. Rains prediction in Brazil. Work in progress!<br>
@@ -21,11 +29,3 @@ Tryouts in machine learning and data analysis.
     
     - [receipts](./kaggle_inclass/receipts)<br>
     https://www.kaggle.com/c/receipt-categorisation
-    
-* ml_models_implementation
-
-  Machine learning models implementation.
-  
-  - [mlmc_online_logreg](./ml_models_implementation/mlmc_online_logreg)<br>
-  Multilabel/multiclass online logistic regression model.<br>
-  Реализованная по мотивам задания курса OpenDataScience модель multilabel/multiclass классификации, выполняющая онлайн-обучение (стохастический градиентный спуск с логистической функцией потерь). Рассматривается задача классификации текстов. В качестве примера взят датасет вопросов на stackoverflow, задачей стоит предсказание тегов вопросов. [Описание задачи](./ml_models_implementation/mlmc_online_logreg/description.ipynb).
