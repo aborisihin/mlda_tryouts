@@ -28,4 +28,4 @@ Tryouts in machine learning and data analysis.
   
   - [mlmc_online_logreg](./ml_models_implementation/mlmc_online_logreg)<br>
   Multilabel/multiclass online logistic regression model.<br>
-  Реализованная по мотивам задания курса OpenDataScience модель multilabel/multiclass классификации, выполняющая онлайн-обучение (стохастический градиентный спуск с логистической функцией потерь). Рассматривается задача классификации текстов. В качестве примера взят датасет вопросов на stackoverflow, задачей стоит предсказание тегов вопросов.
+  Реализованная по мотивам задания курса OpenDataScience модель multilabel/multiclass классификации, выполняющая онлайн-обучение (стохастический градиентный спуск с логистической функцией потерь). Рассматривается задача классификации текстов. В качестве примера взят датасет вопросов на stackoverflow, задачей стоит предсказание тегов вопросов. [Описание задачи](./ml_models_implementation/mlmc_online_logreg/description.ipynb).
