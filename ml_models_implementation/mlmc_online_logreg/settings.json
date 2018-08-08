@@ -3,10 +3,13 @@
 	"data_file": "stackoverflow_sample_125k.tsv", 
 	"top_tags_count": 10, 
 	"top_tags_file": "top_tags.tsv", 
-	"filtered_tmp_file": "so_125k_filtered.tsv",
+	"filtered_tmp_file": "stackoverflow_sample_125k_filtered.tsv",
 	"train_size": 0.8, 
 	"train_file": "train.tsv", 
 	"train_labels_file": "train_labels.tsv",
 	"test_file": "test.tsv",
-	"test_labels_file": "test_labels.tsv"
+	"test_labels_file": "test_labels.tsv", 
+	"additional_data_dir": "./../../data/tryouts/stackoverflow_scraped/", 
+	"additional_data_file": "received_{}.csv", 
+	"objects_to_scrap": 200
 }
