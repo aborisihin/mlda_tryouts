@@ -1,9 +1,10 @@
 {
-	"data_dir": "./../../data/tryouts/stackoverflow_125k/", 
-	"data_file": "stackoverflow_sample_125k.tsv", 
+	"data_dir": "./../../data/tryouts/stackoverflow_scraped/", 
+	"data_file": "stackoverflow_10k.tsv", 
+	"objects_to_scrap": 10000,
 	"top_tags_count": 10, 
 	"top_tags_file": "top_tags.tsv", 
-	"filtered_tmp_file": "so_125k_filtered.tsv",
+	"filtered_tmp_file": "stackoverflow_10k_filtered.tsv",
 	"train_size": 0.8, 
 	"train_file": "train.tsv", 
 	"train_labels_file": "train_labels.tsv",
