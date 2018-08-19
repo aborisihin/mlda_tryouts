@@ -14,42 +14,59 @@ Types, methods and constants
 ----------------------------
 """
 
+""" Критерии разбиения
+"""
 
-def entropy(y):
+
+# Энтропия
+def _entropy(y):
     p = [(1.0 * y[y == k].shape[0]) / y.shape[0] for k in np.unique(y)]
     return -np.dot(p, np.log2(p))
 
 
-def gini(y):
+# Неопределенность Джини
+def _gini(y):
     p = [(1.0 * y[y == k].shape[0]) / y.shape[0] for k in np.unique(y)]
     return 1.0 - np.dot(p, p)
 
 
-def variance(y):
+# Дисперсия
+def _variance(y):
     return np.var(y) if len(y) > 0 else 0.0
 
 
-def mad_median(y):
+# Среднее отклонение от медианы
+def _mad_median(y):
     return np.mean(np.abs(y - np.median(y))) if len(y) > 0 else 0.0
 
 
-criterion_dict = {'entropy': entropy, 'gini': gini,
-                  'variance': variance, 'mad_median': mad_median}
+# Словарь критериев разбиения
+criterion_dict = {'entropy': _entropy, 'gini': _gini,
+                  'variance': _variance, 'mad_median': _mad_median}
 
+
+# Словарь соответствия критерия характеру задачи
 criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
                         'variance': 'regression', 'mad_median': 'regression'}
 
 
-def leaf_value_classification(y):
+""" Функции вычисления ответов в узлах
+"""
+
+
+# Ответ для задачи классификации
+def _leaf_value_classification(y):
     return np.argmax(np.bincount(y))
 
 
-def leaf_value_regression(y):
+# Ответ для задачи регрессии
+def _leaf_value_regression(y):
     return np.mean(y)
 
 
-leaf_value_dict = {'classification': leaf_value_classification,
-                   'regression': leaf_value_regression}
+# Словарь функций вычисления оветов в узле
+leaf_value_dict = {'classification': _leaf_value_classification,
+                   'regression': _leaf_value_regression}
 
 
 def leaf_labels_ratio_classification(y, n_classes):
