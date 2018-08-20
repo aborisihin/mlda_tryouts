@@ -41,13 +41,13 @@ def _mad_median(y):
 
 
 # Словарь критериев разбиения
-criterion_dict = {'entropy': _entropy, 'gini': _gini,
-                  'variance': _variance, 'mad_median': _mad_median}
+_criterion_dict = {'entropy': _entropy, 'gini': _gini,
+                   'variance': _variance, 'mad_median': _mad_median}
 
 
 # Словарь соответствия критерия характеру задачи
-criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
-                        'variance': 'regression', 'mad_median': 'regression'}
+_criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
+                         'variance': 'regression', 'mad_median': 'regression'}
 
 
 """ Функции вычисления ответов в узлах
@@ -65,23 +65,34 @@ def _leaf_value_regression(y):
 
 
 # Словарь функций вычисления оветов в узле
-leaf_value_dict = {'classification': _leaf_value_classification,
-                   'regression': _leaf_value_regression}
+_leaf_value_dict = {'classification': _leaf_value_classification,
+                    'regression': _leaf_value_regression}
 
 
-def leaf_labels_ratio_classification(y, n_classes):
+""" Функции вычисления вероятностных ответов в узлах
+"""
+
+
+# Ответ для задачи классификации
+def _leaf_labels_ratio_classification(y, n_classes):
     return np.bincount(y, minlength=n_classes) / len(y)
 
 
-def leaf_labels_ratio_regression(y, n_classes):
+# Ответ для задачи регрессии (не определен)
+def _leaf_labels_ratio_regression(y, n_classes):
     return None
 
 
-leaf_labels_ratio_dict = {'classification': leaf_labels_ratio_classification,
-                          'regression': leaf_labels_ratio_regression}
+# Словарь функций вычисления вероятностных оветов в узле
+_leaf_labels_ratio_dict = {'classification': _leaf_labels_ratio_classification,
+                           'regression': _leaf_labels_ratio_regression}
 
 
-class TreeNode():
+""" Класс узла дерева
+"""
+
+
+class _TreeNode():
     def __init__(self, feature_idx=None, threshold=None,
                  leaf_value=None, leaf_labels_ratio=None,
                  left_child=None, right_child=None):
@@ -133,9 +144,9 @@ class DecisionTree(BaseEstimator):
 
         super(DecisionTree, self).set_params(**params)
 
-        self._criterion = criterion_dict[self.criterion]
-        self._leaf_value = leaf_value_dict[criterion_types_dict[self.criterion]]
-        self._leaf_labels_ratio = leaf_labels_ratio_dict[criterion_types_dict[self.criterion]]
+        self._criterion = _criterion_dict[self.criterion]
+        self._leaf_value = _leaf_value_dict[_criterion_types_dict[self.criterion]]
+        self._leaf_labels_ratio = _leaf_labels_ratio_dict[_criterion_types_dict[self.criterion]]
 
         if self.debug:
             print('DecisionTree class set params:')
@@ -167,8 +178,8 @@ class DecisionTree(BaseEstimator):
                     depth, X.shape[0], round(self._leaf_value(y), 2),
                     np.round(l_ratio, decimals=2) if l_ratio is not None else None))
 
-            return TreeNode(leaf_value=self._leaf_value(y),
-                            leaf_labels_ratio=self._leaf_labels_ratio(y, self._n_classes))
+            return _TreeNode(leaf_value=self._leaf_value(y),
+                             leaf_labels_ratio=self._leaf_labels_ratio(y, self._n_classes))
 
         best_functional = 0.0
         best_feature_idx = None
@@ -201,9 +212,9 @@ class DecisionTree(BaseEstimator):
 
             best_left_mask = X[:, best_feature_idx] < best_threshold
 
-            return TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
-                            left_child=self._build_tree(X[best_left_mask, :], y[best_left_mask], depth=depth + 1),
-                            right_child=self._build_tree(X[~best_left_mask, :], y[~best_left_mask], depth=depth + 1))
+            return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
+                             left_child=self._build_tree(X[best_left_mask, :], y[best_left_mask], depth=depth + 1),
+                             right_child=self._build_tree(X[~best_left_mask, :], y[~best_left_mask], depth=depth + 1))
 
         else:
 
@@ -213,12 +224,12 @@ class DecisionTree(BaseEstimator):
                     depth, X.shape[0], round(self._leaf_value(y), 2),
                     np.round(l_ratio, decimals=2) if l_ratio is not None else None))
 
-            return TreeNode(leaf_value=self._leaf_value(y),
-                            leaf_labels_ratio=self._leaf_labels_ratio(y, self._n_classes))
+            return _TreeNode(leaf_value=self._leaf_value(y),
+                             leaf_labels_ratio=self._leaf_labels_ratio(y, self._n_classes))
 
     def fit(self, X, y):
 
-        if criterion_types_dict[self.criterion] == 'classification':
+        if _criterion_types_dict[self.criterion] == 'classification':
             self._n_classes = np.amax(y) + 1
         else:
             self._n_classes = None
@@ -243,11 +254,11 @@ class DecisionTree(BaseEstimator):
     def _predict_object(self, obj):
         return self._get_object_leaf(obj).leaf_value
 
-    def predict(self, X):
-        return np.array([self._predict_object(obj) for obj in X])
-
     def _predict_object_proba(self, obj):
         return self._get_object_leaf(obj).leaf_labels_ratio
+
+    def predict(self, X):
+        return np.array([self._predict_object(obj) for obj in X])
 
     def predict_proba(self, X):
         return np.array([self._predict_object_proba(obj) for obj in X])
