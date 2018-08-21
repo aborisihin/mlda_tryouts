@@ -55,18 +55,18 @@ _criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
 
 
 # Ответ для задачи классификации
-def _leaf_value_classification(y):
+def _node_value_classification(y):
     return np.argmax(np.bincount(y))
 
 
 # Ответ для задачи регрессии
-def _leaf_value_regression(y):
+def _node_value_regression(y):
     return np.mean(y)
 
 
 # Словарь функций вычисления оветов в узле
-_leaf_value_dict = {'classification': _leaf_value_classification,
-                    'regression': _leaf_value_regression}
+_leaf_value_dict = {'classification': _node_value_classification,
+                    'regression': _node_value_regression}
 
 
 """ Функции вычисления вероятностных ответов в узлах
@@ -74,18 +74,18 @@ _leaf_value_dict = {'classification': _leaf_value_classification,
 
 
 # Ответ для задачи классификации
-def _leaf_labels_ratio_classification(y, n_classes):
+def _node_labels_ratio_classification(y, n_classes):
     return np.bincount(y, minlength=n_classes) / len(y)
 
 
 # Ответ для задачи регрессии (не определен)
-def _leaf_labels_ratio_regression(y, n_classes):
+def _node_labels_ratio_regression(y, n_classes):
     return None
 
 
 # Словарь функций вычисления вероятностных оветов в узле
-_leaf_labels_ratio_dict = {'classification': _leaf_labels_ratio_classification,
-                           'regression': _leaf_labels_ratio_regression}
+_leaf_labels_ratio_dict = {'classification': _node_labels_ratio_classification,
+                           'regression': _node_labels_ratio_regression}
 
 
 """ Класс узла дерева
@@ -93,14 +93,37 @@ _leaf_labels_ratio_dict = {'classification': _leaf_labels_ratio_classification,
 
 
 class _TreeNode():
-    def __init__(self, feature_idx=None, threshold=None,
-                 leaf_value=None, leaf_labels_ratio=None,
-                 left_child=None, right_child=None):
+    """ Tree node class
+    Класс узла дерева
 
+    Parameters
+    ----------
+    feature_idx : int, default: None
+        Индекс признака разбиения в узле
+
+    threshold : float, default: None
+        Значение порога разбиения в узле
+
+    node_value : float, default: None
+        Ответ в узле
+
+    node_labels_ratio : float, default: None
+        Вероятностный ответ в узле
+        (распределение классов в задаче классификации)
+
+    left_child : _TreeNode, default: None
+        Левый дочерний узел
+
+    right_child : _TreeNode, default: None
+        Правый дочерний узел
+    """
+    def __init__(self, feature_idx=None, threshold=None,
+                 node_value=None, node_labels_ratio=None,
+                 left_child=None, right_child=None):
         self.feature_idx = feature_idx
         self.threshold = threshold
-        self.leaf_value = leaf_value
-        self.leaf_labels_ratio = leaf_labels_ratio
+        self.node_value = node_value
+        self.node_labels_ratio = node_labels_ratio
         self.left_child = left_child
         self.right_child = right_child
 
@@ -112,7 +135,7 @@ DecisionTree class
 
 
 class DecisionTree(BaseEstimator):
-    """ DecisionTree classifier/regressor
+    """ DecisionTree classifier/regressor class
     Класс реализует модель дерева решений, поддерживающего задачи классификации и регрессии.
 
     Parameters
