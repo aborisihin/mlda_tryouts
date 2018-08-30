@@ -174,6 +174,12 @@ class DecisionTree(BaseEstimator):
     _n_classes : int or None
         Количество классов в задаче классификации (не определен для задачи регрессии).
 
+    _n_samples : int
+        Размер обучающей выборки
+
+    _n_features : int
+        Размерность признакового пространства
+
     _root : _TreeNode
         Корневой узел построенного дерева.
     """
@@ -202,6 +208,10 @@ class DecisionTree(BaseEstimator):
         self._criterion_func = _criterion_dict[self.criterion]
         self._node_value = _node_value_dict[_criterion_types_dict[self.criterion]]
         self._node_labels_ratio = _node_labels_ratio_dict[_criterion_types_dict[self.criterion]]
+
+        self._n_classes = None
+        self._n_samples = None
+        self._n_features = None
 
         if self.verbose:
             print('DecisionTree class set params:')
@@ -232,7 +242,7 @@ class DecisionTree(BaseEstimator):
         float
             Возвращает вычисленное значение функционала в узле.
         """
-        division_mask = (X[:, feature_idx] < threshold)
+        division_mask = (X[:, feature_idx] <= threshold)
         X_size = X.shape[0]
         l_size = np.sum(division_mask.astype(int))
         r_size = X_size - l_size
@@ -264,59 +274,84 @@ class DecisionTree(BaseEstimator):
         _TreeNode
             Возвращает корневой узел построенного дерева.
         """
+
+        # если в узле содержатся объекты одного класса, прерываем разбиение и 
+        # возвращаем листовой объект
         if np.unique(y).shape[0] == 1:
 
             if self.verbose:
+                message = 'create leaf (depth={} n_objects={}): value={}'
+                message = message.format(depth, X.shape[0], round(self._node_value(y), 2))
                 l_ratio = self._node_labels_ratio(y, self._n_classes)
-                print('create leaf (depth={} n_objects={}): value = {} labels_ratio = {}'.format(
-                    depth, X.shape[0], round(self._node_value(y), 2),
-                    np.round(l_ratio, decimals=2) if l_ratio is not None else None))
+                if l_ratio is not None:
+                    message += ' labels_ratio={}'
+                    message = message.format(np.round(l_ratio, decimals=2))
+                print(message)
 
             return _TreeNode(node_value=self._node_value(y),
                              node_labels_ratio=self._node_labels_ratio(y, self._n_classes))
 
+        # лучшие параметры разбиения
         best_functional = 0.0
         best_feature_idx = None
         best_threshold = None
 
-        n_samples, n_features = X.shape
+        n_node_samples = X.shape[0]
 
-        if (depth < self.max_depth) and (n_samples >= self.min_samples_split):
+        # проверка критерия останова
+        if (depth < self.max_depth) and (n_node_samples >= self.min_samples_split):
+            
+            # посчитаем функционалы для каждого признака
+            for feature_idx in range(self._n_features):
 
-            for feature_idx in range(n_features):
+                X_feature_slice = X[:, feature_idx]
+                nulls_mask = np.isnan(X_feature_slice)
 
-                if np.unique(X[:, feature_idx]).shape[0] == 1:
+                # если все непропущенные значения признака на выборке одинаковы, 
+                # то признак не рассматриваем
+                if np.unique(X_feature_slice[~nulls_mask]).shape[0] == 1:
                     continue
 
-                thresholds = np.unique(X[:, feature_idx])
-                thresholds = thresholds[1:]
+                # множество порогов разбиения как уникальные непропущенные значения признака
+                thresholds = np.unique(X_feature_slice[~nulls_mask])
+                thresholds = thresholds[:-1]
 
+                # значения функционала для каждого порога
                 functionals = [self._functional(X, y, feature_idx, thr) for thr in thresholds]
 
+                # при необходимости обновим лучшие параметры разбиения
                 if np.max(functionals) > best_functional:
                     best_functional = np.max(functionals)
                     best_feature_idx = feature_idx
                     best_threshold = thresholds[np.argmax(functionals)]
 
+        # разбиение найдено, выполним рекурсивные вызовы
         if best_feature_idx is not None:
 
             if self.verbose:
-                print('node (depth={} n_objects={}) division: feature_idx = {} threshold = {}'.format(
-                    depth, X.shape[0], best_feature_idx, round(best_threshold, 2)))
+                message = 'node (depth={} n_objects={}) division: feature_idx = {} threshold = {}'
+                message = message.format(depth, X.shape[0], best_feature_idx, round(best_threshold, 2))
+                print(message)
 
-            best_left_mask = X[:, best_feature_idx] < best_threshold
+            best_left_mask = X[:, best_feature_idx] <= best_threshold
 
             return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
+                             node_value=self._node_value(y),
+                             node_labels_ratio=self._node_labels_ratio(y, self._n_classes),
                              left_child=self._build_tree(X[best_left_mask, :], y[best_left_mask], depth=depth + 1),
                              right_child=self._build_tree(X[~best_left_mask, :], y[~best_left_mask], depth=depth + 1))
 
+        # разбиение не найдено, возвращаем листовой объект
         else:
 
             if self.verbose:
+                message = 'create leaf (depth={} n_objects={}): value={}'
+                message = message.format(depth, X.shape[0], round(self._node_value(y), 2))
                 l_ratio = self._node_labels_ratio(y, self._n_classes)
-                print('create leaf (depth={} n_objects={}): value = {} labels_ratio = {}'.format(
-                    depth, X.shape[0], round(self._node_value(y), 2),
-                    np.round(l_ratio, decimals=2) if l_ratio is not None else None))
+                if l_ratio is not None:
+                    message += ' labels_ratio={}'
+                    message = message.format(np.round(l_ratio, decimals=2))
+                print(message)
 
             return _TreeNode(node_value=self._node_value(y),
                              node_labels_ratio=self._node_labels_ratio(y, self._n_classes))
@@ -338,6 +373,8 @@ class DecisionTree(BaseEstimator):
         self : object
             Возвращает объект класса.
         """
+        self._n_samples, self._n_features = X.shape
+
         if _criterion_types_dict[self.criterion] == 'classification':
             self._n_classes = np.amax(y) + 1
         else:
@@ -363,9 +400,8 @@ class DecisionTree(BaseEstimator):
         """
         node = self._root
 
-        while node.node_value is None:
-
-            if obj[node.feature_idx] < node.threshold:
+        while node.left_child and node.right_child:
+            if obj[node.feature_idx] <= node.threshold:
                 node = node.left_child
             else:
                 node = node.right_child
