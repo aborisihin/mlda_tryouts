@@ -55,8 +55,9 @@ _criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
 
 
 # Ответ для задачи классификации
-def _node_value_classification(y):
-    return np.argmax(np.bincount(y))
+def _node_value_classification(y, w):
+    return np.argmax([np.sum(w[y == k]) for k in np.arange(np.amax(y) + 1)])
+    #return np.argmax(np.bincount(y))
 
 
 # Ответ для задачи регрессии
@@ -144,12 +145,12 @@ class DecisionTree(BaseEstimator):
         Если не задано, максимальная глубина не органичена.
 
     min_samples_split : int, default: 2
-        Минимальное количество примеров обучающей выборки в узле, при котором происходит 
+        Минимальное количество примеров обучающей выборки в узле, при котором происходит
         ее разбиение.
 
     criterion : string, default: 'gini'
         Тип критерия разбиения. Поддерживаемые значения:
-        - для задачи классификации: 
+        - для задачи классификации:
             'gini' (неопределенность Джини)
             'entropy' (энтропия Шеннона)
         - для задачи регрессии:
@@ -400,7 +401,7 @@ class DecisionTree(BaseEstimator):
         Returns
         -------
         array-like, shape = [n_classes]
-            Возвращает вектор вероятностного предсказания для примера (вероятности 
+            Возвращает вектор вероятностного предсказания для примера (вероятности
             принадлежности объекта каждому классу).
         """
         return self._get_object_leaf(obj).node_labels_ratio
@@ -417,7 +418,7 @@ class DecisionTree(BaseEstimator):
         Returns
         -------
         array-like, shape = [n_samples]
-            Возвращает вектор предсказаний для выборки (индекс класса для задачи 
+            Возвращает вектор предсказаний для выборки (индекс класса для задачи
             классификации или вещественное значение для задачи регрессии).
         """
         return np.array([self._predict_object(obj) for obj in X])
@@ -434,7 +435,7 @@ class DecisionTree(BaseEstimator):
         Returns
         -------
         array-like, shape = [n_samples, n_classes]
-            Возвращает массив вероятностных предсказаний для выборки (вероятности 
+            Возвращает массив вероятностных предсказаний для выборки (вероятности
             принадлежности объектов каждому классу).
         """
         return np.array([self._predict_object_proba(obj) for obj in X])
