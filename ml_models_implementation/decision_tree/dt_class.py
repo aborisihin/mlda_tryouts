@@ -55,9 +55,8 @@ _criterion_types_dict = {'entropy': 'classification', 'gini': 'classification',
 
 
 # Ответ для задачи классификации
-def _node_value_classification(y, w):
-    return np.argmax([np.sum(w[y == k]) for k in np.arange(np.amax(y) + 1)])
-    #return np.argmax(np.bincount(y))
+def _node_value_classification(y):
+    return np.argmax(np.bincount(y))
 
 
 # Ответ для задачи регрессии
@@ -106,10 +105,11 @@ class _TreeNode():
         Значение порога разбиения в узле.
 
     node_value : float, default: None
-        Ответ в узле.
+        Ответ в узле. Применим только для листьев.
 
     node_labels_ratio : float, default: None
         Вероятностный ответ в узле (распределение классов в задаче классификации).
+        Применим только для листьев.
 
     left_child : _TreeNode, default: None
         Левый дочерний узел.
@@ -275,7 +275,7 @@ class DecisionTree(BaseEstimator):
             Возвращает корневой узел построенного дерева.
         """
 
-        # если в узле содержатся объекты одного класса, прерываем разбиение и 
+        # если в узле содержатся объекты одного класса, прерываем разбиение и
         # возвращаем листовой объект
         if np.unique(y).shape[0] == 1:
 
@@ -300,14 +300,14 @@ class DecisionTree(BaseEstimator):
 
         # проверка критерия останова
         if (depth < self.max_depth) and (n_node_samples >= self.min_samples_split):
-            
+
             # посчитаем функционалы для каждого признака
             for feature_idx in range(self._n_features):
 
                 X_feature_slice = X[:, feature_idx]
                 nulls_mask = np.isnan(X_feature_slice)
 
-                # если все непропущенные значения признака на выборке одинаковы, 
+                # если все непропущенные значения признака на выборке одинаковы,
                 # то признак не рассматриваем
                 if np.unique(X_feature_slice[~nulls_mask]).shape[0] == 1:
                     continue
@@ -400,7 +400,7 @@ class DecisionTree(BaseEstimator):
         """
         node = self._root
 
-        while node.left_child and node.right_child:
+        while node.node_value is None:
             if obj[node.feature_idx] <= node.threshold:
                 node = node.left_child
             else:
