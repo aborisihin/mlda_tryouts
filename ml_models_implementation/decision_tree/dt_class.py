@@ -219,20 +219,18 @@ class DecisionTree(BaseEstimator):
 
         return self
 
-    def _functional(self, X, y, feature_idx, threshold):
+    def _functional(self, X_feature_slice, y, threshold):
         """Get functional value.
         Вычисление значения функционала в узле.
 
         Parameters
         ----------
-        X : array-like, shape = [n_sub_samples, n_features]
-            Массив примеров обучающей выборки, находящихся в узле.
+        X_feature_slice : array-like, shape = [n_sub_samples, 1]
+            Срез обучающей выборки по рассматриваемому признаку.
+            Не должен содержать пропущенных значений.
 
         y : array-like, shape = [n_sub_samples] or [n_sub_samples, n_classes]
-            Вектор целевых значений для примеров из узла.
-
-        feature_idx : int
-            Индекс признака, по которому проводится разбиение в узле.
+            Вектор или массив целевых значений обучающей выборки.
 
         threshold : float
             Порог разбиения выборки по признаку.
@@ -242,17 +240,50 @@ class DecisionTree(BaseEstimator):
         float
             Возвращает вычисленное значение функционала в узле.
         """
-        division_mask = (X[:, feature_idx] <= threshold)
-        X_size = X.shape[0]
+        division_mask = (X_feature_slice <= threshold)
+        X_size = X_feature_slice.shape[0]
         l_size = np.sum(division_mask.astype(int))
         r_size = X_size - l_size
 
         if X_size != 0:
-            return (self._criterion_func(y) -
-                    (l_size / X_size) * self._criterion_func(y[division_mask]) -
-                    (r_size / X_size) * self._criterion_func(y[~division_mask]))
+            return (self._criterion_func(y) - 
+                (l_size / X_size) * self._criterion_func(y[division_mask]) -
+                (r_size / X_size) * self._criterion_func(y[~division_mask]))
         else:
             return 0.0
+
+    def _find_surrogate_splits(self, X, y, best_feature_idx, best_threshod):
+        """Find all surrogate splits.
+        Метод поиска всех суррогатных разбиений в вершине.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_sub_samples, n_features]
+            Массив примеров обучающей выборки, находящихся в узле.
+
+        y : array-like, shape = [n_sub_samples] or [n_sub_samples, n_classes]
+            Вектор целевых значений для примеров из узла.
+
+        best_feature_idx : int
+            Индекс признака оптимального разбиения в вершине.
+
+        best_threshod : float
+            Порог оптимального разбиения в вершине.
+
+        Returns
+        -------
+        list of tuples (<feat_idx>, <threshold>, <reverse>)
+            Возвращает ранжированный список суррогатных разбиений.
+            Разбиение описывается кортежем: индекс признака (int), порог разбиения (float), 
+            флаг обратного разбиения (в предикате вычисляется обратное неравенство).
+        """
+        best_left_mask = [((feat_val is not None) and (feat_val <= best_threshod)) 
+            for feat_val in X[:, best_feature_idx]]
+        best_left_indicies = np.argwhere(best_left_mask).flatten()
+
+        best_right_mask = [((feat_val is not None) and (feat_val > best_threshod)) 
+            for feat_val in X[:, best_feature_idx]]
+        best_right_indicies = np.argwhere(best_right_mask).flatten()
 
     def _build_tree(self, X, y, depth=1):
         """Build a tree.
@@ -307,17 +338,24 @@ class DecisionTree(BaseEstimator):
                 X_feature_slice = X[:, feature_idx]
                 nulls_mask = np.isnan(X_feature_slice)
 
+                X_feat_notnull = X_feature_slice[~nulls_mask]
+                y_notnull = y[~nulls_mask]
+
                 # если все непропущенные значения признака на выборке одинаковы,
                 # то признак не рассматриваем
-                if np.unique(X_feature_slice[~nulls_mask]).shape[0] == 1:
+                if np.unique(X_feat_notnull).shape[0] == 1:
                     continue
 
                 # множество порогов разбиения как уникальные непропущенные значения признака
-                thresholds = np.unique(X_feature_slice[~nulls_mask])
+                thresholds = np.unique(X_feat_notnull)
                 thresholds = thresholds[:-1]
 
+                # коэффициент поправки на пропущенные значения
+                nulls_k = (X.shape[0] - np.sum(nulls_mask.astype(int))) / (X.shape[0])
+
                 # значения функционала для каждого порога
-                functionals = [self._functional(X, y, feature_idx, thr) for thr in thresholds]
+                functionals = [nulls_k * self._functional(X_feat_notnull, y_notnull, thr) 
+                    for thr in thresholds]
 
                 # при необходимости обновим лучшие параметры разбиения
                 if np.max(functionals) > best_functional:
@@ -333,11 +371,11 @@ class DecisionTree(BaseEstimator):
                 message = message.format(depth, X.shape[0], best_feature_idx, round(best_threshold, 2))
                 print(message)
 
+            surrogate_splits = self._find_surrogate_splits(X, y, best_feature_idx, best_threshold)
+
             best_left_mask = X[:, best_feature_idx] <= best_threshold
 
             return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
-                             node_value=self._node_value(y),
-                             node_labels_ratio=self._node_labels_ratio(y, self._n_classes),
                              left_child=self._build_tree(X[best_left_mask, :], y[best_left_mask], depth=depth + 1),
                              right_child=self._build_tree(X[~best_left_mask, :], y[~best_left_mask], depth=depth + 1))
 
