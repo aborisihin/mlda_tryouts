@@ -5,6 +5,7 @@ Contains DecisionTree class.
 import numpy as np
 
 from sklearn.base import BaseEstimator
+from operator import itemgetter
 
 __all__ = ['DecisionTree']
 
@@ -219,6 +220,68 @@ class DecisionTree(BaseEstimator):
 
         return self
 
+    def fit(self, X, y):
+        """Fit a model.
+        Метод обучения модели (построения дерева решений).
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Массив примеров обучающей выборки.
+
+        y : array-like, shape = [n_samples] or [n_samples, n_classes]
+            Вектор целевых значений для примеров обучающей выборки.
+
+        Returns
+        -------
+        self : object
+            Возвращает объект класса.
+        """
+        self._n_samples, self._n_features = X.shape
+
+        if _criterion_types_dict[self.criterion] == 'classification':
+            self._n_classes = np.amax(y) + 1
+        else:
+            self._n_classes = None
+
+        self._root = self._build_tree(X, y)
+
+        return self
+
+    def predict(self, X):
+        """Get a prediction for list of objects.
+        Метод получения вероятностного прогноза для тестовой выборки.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Массив примеров из тестовой выборки.
+
+        Returns
+        -------
+        array-like, shape = [n_samples]
+            Возвращает вектор предсказаний для выборки (индекс класса для задачи
+            классификации или вещественное значение для задачи регрессии).
+        """
+        return np.array([self._predict_object(obj) for obj in X])
+
+    def predict_proba(self, X):
+        """Get a probability prediction for list of objects.
+        Метод получения вероятностного прогноза для тестовой выборки.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Массив примеров из тестовой выборки.
+
+        Returns
+        -------
+        array-like, shape = [n_samples, n_classes]
+            Возвращает массив вероятностных предсказаний для выборки (вероятности
+            принадлежности объектов каждому классу).
+        """
+        return np.array([self._predict_object_proba(obj) for obj in X])
+
     def _functional(self, X_feature_slice, y, threshold):
         """Get functional value.
         Вычисление значения функционала в узле.
@@ -247,43 +310,10 @@ class DecisionTree(BaseEstimator):
 
         if X_size != 0:
             return (self._criterion_func(y) - 
-                (l_size / X_size) * self._criterion_func(y[division_mask]) -
-                (r_size / X_size) * self._criterion_func(y[~division_mask]))
+                    (l_size / X_size) * self._criterion_func(y[division_mask]) -
+                    (r_size / X_size) * self._criterion_func(y[~division_mask]))
         else:
             return 0.0
-
-    def _find_surrogate_splits(self, X, y, best_feature_idx, best_threshod):
-        """Find all surrogate splits.
-        Метод поиска всех суррогатных разбиений в вершине.
-
-        Parameters
-        ----------
-        X : array-like, shape = [n_sub_samples, n_features]
-            Массив примеров обучающей выборки, находящихся в узле.
-
-        y : array-like, shape = [n_sub_samples] or [n_sub_samples, n_classes]
-            Вектор целевых значений для примеров из узла.
-
-        best_feature_idx : int
-            Индекс признака оптимального разбиения в вершине.
-
-        best_threshod : float
-            Порог оптимального разбиения в вершине.
-
-        Returns
-        -------
-        list of tuples (<feat_idx>, <threshold>, <reverse>)
-            Возвращает ранжированный список суррогатных разбиений.
-            Разбиение описывается кортежем: индекс признака (int), порог разбиения (float), 
-            флаг обратного разбиения (в предикате вычисляется обратное неравенство).
-        """
-        best_left_mask = [((feat_val is not None) and (feat_val <= best_threshod)) 
-            for feat_val in X[:, best_feature_idx]]
-        best_left_indicies = np.argwhere(best_left_mask).flatten()
-
-        best_right_mask = [((feat_val is not None) and (feat_val > best_threshod)) 
-            for feat_val in X[:, best_feature_idx]]
-        best_right_indicies = np.argwhere(best_right_mask).flatten()
 
     def _build_tree(self, X, y, depth=1):
         """Build a tree.
@@ -338,24 +368,22 @@ class DecisionTree(BaseEstimator):
                 X_feature_slice = X[:, feature_idx]
                 nulls_mask = np.isnan(X_feature_slice)
 
-                X_feat_notnull = X_feature_slice[~nulls_mask]
-                y_notnull = y[~nulls_mask]
-
-                # если все непропущенные значения признака на выборке одинаковы,
-                # то признак не рассматриваем
-                if np.unique(X_feat_notnull).shape[0] == 1:
+                # если все значения признака в выборке пропущены, пропускаем признак
+                if np.sum(~nulls_mask) == 0:
                     continue
 
-                # множество порогов разбиения как уникальные непропущенные значения признака
-                thresholds = np.unique(X_feat_notnull)
-                thresholds = thresholds[:-1]
+                X_feat_notnull = X_feature_slice[~nulls_mask]
+                y_notnull = y[~nulls_mask]
 
                 # коэффициент поправки на пропущенные значения
                 nulls_k = (X.shape[0] - np.sum(nulls_mask.astype(int))) / (X.shape[0])
 
+                # пороги разбиения
+                thresholds = self._find_thresholds(X_feat_notnull)
+
                 # значения функционала для каждого порога
                 functionals = [nulls_k * self._functional(X_feat_notnull, y_notnull, thr) 
-                    for thr in thresholds]
+                                    for thr in thresholds]
 
                 # при необходимости обновим лучшие параметры разбиения
                 if np.max(functionals) > best_functional:
@@ -373,11 +401,29 @@ class DecisionTree(BaseEstimator):
 
             surrogate_splits = self._find_surrogate_splits(X, y, best_feature_idx, best_threshold)
 
+            ####################################################
+            # np.apply_along_axis !!!
+
+
+
+            # v_check_left_split = np.vectorize(self._check_left_split, 
+            #     excluded=['feature_idx', 'threshold', 'surrogate_splits', 'left_majority'])
+
+            # ooo = v_check_left_split(X, best_feature_idx, best_threshold, surrogate_splits, True)
+
+            ####################################################
+
             best_left_mask = X[:, best_feature_idx] <= best_threshold
 
             return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
-                             left_child=self._build_tree(X[best_left_mask, :], y[best_left_mask], depth=depth + 1),
-                             right_child=self._build_tree(X[~best_left_mask, :], y[~best_left_mask], depth=depth + 1))
+                             left_child=self._build_tree(
+                                X[best_left_mask, :], 
+                                y[best_left_mask], 
+                                depth=depth + 1),
+                             right_child=self._build_tree(
+                                X[~best_left_mask, :], 
+                                y[~best_left_mask], 
+                                depth=depth + 1))
 
         # разбиение не найдено, возвращаем листовой объект
         else:
@@ -394,33 +440,152 @@ class DecisionTree(BaseEstimator):
             return _TreeNode(node_value=self._node_value(y),
                              node_labels_ratio=self._node_labels_ratio(y, self._n_classes))
 
-    def fit(self, X, y):
-        """Fit a model.
-        Метод обучения модели (построения дерева решений).
+    def _find_thresholds(self, feature_X):
+        """Find all thresholds for feature.
+        Метод поиска порогов разбиения выборки для признака.
 
         Parameters
         ----------
-        X : array-like, shape = [n_samples, n_features]
-            Массив примеров обучающей выборки.
-
-        y : array-like, shape = [n_samples] or [n_samples, n_classes]
-            Вектор целевых значений для примеров обучающей выборки.
+        feature_X : array-like, shape = [n_sub_samples]
+            Вектор непропущенных значений признака на выборке.
 
         Returns
         -------
-        self : object
-            Возвращает объект класса.
+        np.array
+            Возвращает массив порогов разбиения дял признака.
         """
-        self._n_samples, self._n_features = X.shape
 
-        if _criterion_types_dict[self.criterion] == 'classification':
-            self._n_classes = np.amax(y) + 1
+        # если все непропущенные значения признака на выборке одинаковы,
+        # то порогов разбиения нет
+        if np.unique(feature_X).shape[0] == 1:
+            return np.array([])
+
+        # множество порогов разбиения как уникальные непропущенные значения признака
+        thresholds = np.unique(feature_X).flatten()
+        
+        return thresholds[:-1]
+
+    def _find_surrogate_splits(self, X, y, feature_idx, threshold):
+        """Find all surrogate splits.
+        Метод поиска всех суррогатных разбиений в вершине.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_sub_samples, n_features]
+            Массив примеров обучающей выборки, находящихся в узле.
+
+        y : array-like, shape = [n_sub_samples] or [n_sub_samples, n_classes]
+            Вектор целевых значений для примеров из узла.
+
+        feature_idx : int
+            Индекс признака оптимального разбиения в вершине.
+
+        threshold : float
+            Порог оптимального разбиения в вершине.
+
+        Returns
+        -------
+        list of tuples (<feat_idx>, <threshold>, <reverse>)
+            Возвращает ранжированный список суррогатных разбиений.
+            Разбиение описывается кортежем: индекс признака (int), порог разбиения (float), 
+            флаг обратного разбиения (в предикате вычисляется обратное неравенство).
+        """
+        left_mask_func = lambda v, t: True if ~np.isnan(v) and (v <= t) else False
+        right_mask_func = lambda v, t: True if ~np.isnan(v) and (v > t) else False
+
+        # индексы примеров из выборки для левой и правой ветвей оптимального разбиения
+        best_left_iter = (left_mask_func(v, threshold) for v in X[:, feature_idx])
+        best_left_idx = np.argwhere(np.fromiter(best_left_iter, X.dtype)).flatten()
+
+        best_right_iter = (right_mask_func(v, threshold) for v in X[:, feature_idx])
+        best_right_idx = np.argwhere(np.fromiter(best_right_iter, X.dtype)).flatten()
+
+        # размер выборки с непропущенными значениями признака оптимального разбиения
+        X_notnull_count = np.sum((~np.isnan(X[:, feature_idx])).astype(int))
+
+        # базовое значение меры похожести
+        base_similarity = max(
+            best_left_idx.shape[0] / X_notnull_count, 
+            best_right_idx.shape[0] / X_notnull_count)
+
+        surrogate_splits = list()
+
+        # по каждому признаку подберем разбиение
+        for feat_idx in range(self._n_features):
+
+            if feat_idx == feature_idx:
+                continue
+
+            X_feat_notnull = X[:, feat_idx][~np.isnan(X[:, feat_idx])]
+
+            # список порогов разбиения
+            thresholds = self._find_thresholds(X_feat_notnull)
+
+            # список мер похожести для каждого разбиения по признаку
+            similarities = list()
+            reverse_flags = list()
+
+            for thr in thresholds:
+                
+                left_iter = (left_mask_func(v, thr) for v in X[:, feat_idx])
+                left_idx = np.argwhere(np.fromiter(left_iter, X.dtype)).flatten()
+
+                right_iter = (right_mask_func(v, thr) for v in X[:, feat_idx])
+                right_idx = np.argwhere(np.fromiter(right_iter, X.dtype)).flatten()
+
+                similarity = (len(set(left_idx) & set(best_left_idx)) + 
+                                len(set(right_idx) & set(best_right_idx))) / X_notnull_count
+
+                similarities.append(max(similarity, 1.0 - similarity))
+                reverse_flags.append(bool(similarity < 0.5))
+
+            max_similarity = np.max(similarities)
+
+            if max_similarity > base_similarity:
+                surrogate_splits.append((
+                    max_similarity,
+                    feat_idx, 
+                    thresholds[np.argmax(similarities)], 
+                    reverse_flags[np.argmax(similarities)]))
+
+        return [(ss[1], ss[2], ss[3]) for ss in sorted(surrogate_splits, key=itemgetter(0))]
+
+    def _check_left_split(self, object_X, feature_idx, threshold, surrogate_splits, left_majority):
+        """Check if object splits to left child.
+        Метод проверки отнесения объекта выборки в левую ветвь.
+
+        Parameters
+        ----------
+        object_X : array-like, shape = [n_features]
+            Вектор примера обучающей выборки.
+
+        feature_idx : int
+            Индекс признака оптимального разбиения.
+
+        threshold : float
+            Порог оптимального разбиения.
+
+        surrogate_splits : list of tuples (<feat_idx>, <threshold>, <reverse>)
+            Список суррогатных разбиений
+
+        left_majority : bool
+            Флаг отнесения примера в левую ветвь "по большинству"
+
+        Returns
+        -------
+        bool
+            Возвращает флаг отнесения объекта в левую ветвь.
+        """
+        if ~np.isnan(object_X[feature_idx]):
+            return bool(object_X[feature_idx] <= threshold)
         else:
-            self._n_classes = None
-
-        self._root = self._build_tree(X, y)
-
-        return self
+            for ss in surrogate_splits:
+                if ~np.isnan(object_X[ss[0]]):
+                    if ss[2]:
+                        return bool(object_X[ss[0]] <= ss[1])
+                    else:
+                        return bool(object_X[ss[0]] > ss[1])
+            return left_majority
 
     def _get_object_leaf(self, obj):
         """Get a leaf node for object.
@@ -479,37 +644,3 @@ class DecisionTree(BaseEstimator):
             принадлежности объекта каждому классу).
         """
         return self._get_object_leaf(obj).node_labels_ratio
-
-    def predict(self, X):
-        """Get a prediction for list of objects.
-        Метод получения вероятностного прогноза для тестовой выборки.
-
-        Parameters
-        ----------
-        X : array-like, shape = [n_samples, n_features]
-            Массив примеров из тестовой выборки.
-
-        Returns
-        -------
-        array-like, shape = [n_samples]
-            Возвращает вектор предсказаний для выборки (индекс класса для задачи
-            классификации или вещественное значение для задачи регрессии).
-        """
-        return np.array([self._predict_object(obj) for obj in X])
-
-    def predict_proba(self, X):
-        """Get a probability prediction for list of objects.
-        Метод получения вероятностного прогноза для тестовой выборки.
-
-        Parameters
-        ----------
-        X : array-like, shape = [n_samples, n_features]
-            Массив примеров из тестовой выборки.
-
-        Returns
-        -------
-        array-like, shape = [n_samples, n_classes]
-            Возвращает массив вероятностных предсказаний для выборки (вероятности
-            принадлежности объектов каждому классу).
-        """
-        return np.array([self._predict_object_proba(obj) for obj in X])
