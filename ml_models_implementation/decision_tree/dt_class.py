@@ -105,6 +105,14 @@ class _TreeNode():
     threshold : float, default: None
         Значение порога разбиения в узле.
 
+    surrogate_splits : list of tuples (<feat_idx>, <threshold>, <reverse>), default: None
+        Список суррогатных разбиений.
+        Разбиение описывается кортежем: индекс признака (int), порог разбиения (float),
+        флаг обратного разбиения (в предикате вычисляется обратное неравенство).
+
+    left_majority : bool, default: None
+        Флаг отнесения примера в левую ветвь "по большинству".
+
     node_value : float, default: None
         Ответ в узле. Применим только для листьев.
 
@@ -119,10 +127,13 @@ class _TreeNode():
         Правый дочерний узел.
     """
     def __init__(self, feature_idx=None, threshold=None,
+                 surrogate_splits=None, left_majority=None,
                  node_value=None, node_labels_ratio=None,
                  left_child=None, right_child=None):
         self.feature_idx = feature_idx
         self.threshold = threshold
+        self.surrogate_splits = surrogate_splits
+        self.left_majority = left_majority
         self.node_value = node_value
         self.node_labels_ratio = node_labels_ratio
         self.left_child = left_child
@@ -158,6 +169,11 @@ class DecisionTree(BaseEstimator):
             'variance' (дисперсия вокруг среднего)
             'mad_median' (среднее отклонение от медианы).
 
+    use_surrogate_splits : bool, default: False
+        Флаг использования суррогатных разбиений (поддержка пропущенных значений
+        признаков). В случае значения False объекты с пропущенным значением признака
+        разбиения всегда относятся в левую ветвь поддерева.
+
     verbose : bool, default: False
         Флаг вывода сообщений в консоль.
 
@@ -186,11 +202,12 @@ class DecisionTree(BaseEstimator):
     """
 
     def __init__(self, max_depth=None, min_samples_split=2,
-                 criterion='gini', verbose=False):
+                 criterion='gini', use_surrogate_splits=False, verbose=False):
 
         params = {'max_depth': max_depth or np.inf,
                   'min_samples_split': min_samples_split,
                   'criterion': criterion,
+                  'use_surrogate_splits': use_surrogate_splits,
                   'verbose': verbose}
 
         self.set_params(**params)
@@ -382,6 +399,9 @@ class DecisionTree(BaseEstimator):
                 # пороги разбиения
                 thresholds = self._find_thresholds(X_feat_notnull)
 
+                if thresholds.shape[0] == 0:
+                    continue
+
                 # значения функционала для каждого порога
                 functionals = [nulls_k * self._functional(X_feat_notnull, y_notnull, thr)
                                     for thr in thresholds]
@@ -402,13 +422,16 @@ class DecisionTree(BaseEstimator):
 
             surrogate_splits = self._find_surrogate_splits(X, y, best_feature_idx, best_threshold)
 
+            left_split_size = np.sum((X_feat_notnull <= best_threshold).astype(int))
+            left_majority = left_split_size >= (X_feat_notnull.shape[0] / 2)
+
             left_mask = np.apply_along_axis(self._check_left_split, axis=1, arr=X,
                                             feature_idx=best_feature_idx, threshold=best_threshold,
-                                            surrogate_splits=surrogate_splits, left_majority=True)
+                                            surrogate_splits=surrogate_splits, 
+                                            left_majority=left_majority)
 
-            #best_left_mask = X[:, best_feature_idx] <= best_threshold
-
-            return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold,
+            return _TreeNode(feature_idx=best_feature_idx, threshold=best_threshold, 
+                             surrogate_splits=surrogate_splits, left_majority=left_majority,
                              left_child=self._build_tree(
                                 X[left_mask, :],
                                 y[left_mask],
@@ -483,6 +506,9 @@ class DecisionTree(BaseEstimator):
             Разбиение описывается кортежем: индекс признака (int), порог разбиения (float),
             флаг обратного разбиения (в предикате вычисляется обратное неравенство).
         """
+        if ~self.use_surrogate_splits:
+            return list()
+
         left_mask_func = lambda v, t: True if ~np.isnan(v) and (v <= t) else False
         right_mask_func = lambda v, t: True if ~np.isnan(v) and (v > t) else False
 
@@ -513,6 +539,9 @@ class DecisionTree(BaseEstimator):
 
             # список порогов разбиения
             thresholds = self._find_thresholds(X_feat_notnull)
+
+            if thresholds.shape[0] == 0:
+                continue
 
             # список мер похожести для каждого разбиения по признаку
             similarities = list()
@@ -559,10 +588,10 @@ class DecisionTree(BaseEstimator):
             Порог оптимального разбиения.
 
         surrogate_splits : list of tuples (<feat_idx>, <threshold>, <reverse>)
-            Список суррогатных разбиений
+            Список суррогатных разбиений.
 
         left_majority : bool
-            Флаг отнесения примера в левую ветвь "по большинству"
+            Флаг отнесения примера в левую ветвь "по большинству".
 
         Returns
         -------
@@ -572,13 +601,16 @@ class DecisionTree(BaseEstimator):
         if ~np.isnan(object_X[feature_idx]):
             return bool(object_X[feature_idx] <= threshold)
         else:
-            for ss in surrogate_splits:
-                if ~np.isnan(object_X[ss[0]]):
-                    if ss[2]:
-                        return bool(object_X[ss[0]] <= ss[1])
-                    else:
-                        return bool(object_X[ss[0]] > ss[1])
-            return left_majority
+            if self.use_surrogate_splits:
+                for ss in surrogate_splits:
+                    if ~np.isnan(object_X[ss[0]]):
+                        if ss[2]:
+                            return bool(object_X[ss[0]] <= ss[1])
+                        else:
+                            return bool(object_X[ss[0]] > ss[1])
+                return left_majority
+            else:
+                return True
 
     def _get_object_leaf(self, obj):
         """Get a leaf node for object.
@@ -597,7 +629,8 @@ class DecisionTree(BaseEstimator):
         node = self._root
 
         while node.node_value is None:
-            if obj[node.feature_idx] <= node.threshold:
+            if self._check_left_split(obj, node.feature_idx, node.threshold, 
+                                      node.surrogate_splits, node.left_majority):
                 node = node.left_child
             else:
                 node = node.right_child
