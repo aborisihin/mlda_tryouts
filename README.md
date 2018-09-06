@@ -11,7 +11,7 @@ Tryouts in machine learning and data analysis.
 
   - [decision_tree](./ml_models_implementation/decision_tree)<br>
   Decision tree classification and regression model.<br>
-  Реализованная модель дерева решений, решающая задачи классификации и регрессии. В качестве тестирования модели используются сгенерированные датасеты scikit-learn, выполняется сравнение с моделями DecisionTreeClassifier и DecisionTreeRegressor модуля sklearn.tree. [Описание задачи](./ml_models_implementation/decision_tree/description.ipynb).
+  Реализованная модель дерева решений, решающая задачи классификации и регрессии с поддержкой пропусков в данных. В качестве тестирования модели используются сгенерированные датасеты scikit-learn, выполняется сравнение с моделями DecisionTreeClassifier и DecisionTreeRegressor модуля sklearn.tree. [Описание задачи](./ml_models_implementation/decision_tree/description.ipynb).
 
 * [brazil_rains](./brazil_rains)
 
