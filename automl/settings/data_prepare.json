@@ -1,0 +1,29 @@
+{
+	"input_path" : "< path >",
+	"output_path": "< path >",
+	"reader_params":
+	{
+		"sep": "\t", 
+		"index_col": null
+	},
+	"writer_params":
+	{
+		"sep": ",",
+		"index": false
+	},
+	"data_markup_params":
+	{
+		"target_column": "mark",
+		"feature_names_mapping":
+		{
+			"cat": [],
+			"number": [],
+			"string": ["text_field"],
+			"datetime": []
+		},
+		"feature_values_transformers":
+		{
+			"mark": {"ham": 0, "spam": 1}
+		}
+	}
+}
