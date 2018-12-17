@@ -1,6 +1,11 @@
 # mlda_tryouts
 Tryouts in machine learning and data analysis.
 
+* [automl](./automl)
+
+  AutoML system on table data.<br>
+  Система AutoML (автоматическое машинное обучение) на табличных данных.
+
 * ml_models_implementation
 
   Machine learning models implementation.
