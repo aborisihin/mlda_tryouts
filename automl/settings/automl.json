@@ -1,0 +1,30 @@
+{
+	"model":
+	{
+		"name": "automl"
+	},
+	"docker":
+	{
+		"image": "aborisihin/sdsj2018"
+	},
+	"solver":
+	{
+		"type": "auto-sklearn",
+		"time_limit_sec": 1200,
+		"memory_limit_mb": 3072,
+		"metrics":
+		{
+			"classification": "roc_auc",
+			"classification_need_proba": true,
+			"regression": "mean_squared_error"
+		}
+	},
+	"data":
+	{
+		"path": "< path >",
+		"train_file": "train.csv",
+		"test_file": "test.csv",
+		"validation_file": "test-target.csv",
+		"save_processed_data": false
+	}
+}
