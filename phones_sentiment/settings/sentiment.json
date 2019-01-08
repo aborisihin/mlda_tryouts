@@ -1,0 +1,12 @@
+{
+	"docker":
+	{
+		"image": "aborisihin/phone_sentiment"
+	},
+
+	"scrapping":
+	{
+		"start_page": "https://market.yandex.ru/catalog--mobilnye-telefony/54726/list?hid=91491",
+		"download_delay": 10
+	}
+}
