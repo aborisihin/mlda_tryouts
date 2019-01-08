@@ -47,7 +47,7 @@ model-predict:
 	${DOCKER_RUN} ${DOCKER_IMAGE} python3 ./src/predict.py --solver $(SOLVER) --test-csv ${TEST_CSV} --prediction-csv ${PREDICTIONS_CSV} --validation-csv ${VALIDATION_CSV} --model-dir ${MODEL_DIR} --need-proba $(CLASSIFICATION_NEED_PROBA)
 
 data-prepare:
-	python ./src/data_prepare.py --settings $(DATA_PREPARE_SETTINGS_FILE)
+	${DOCKER_RUN} ${DOCKER_IMAGE} python3 ./src/data_prepare.py --settings $(DATA_PREPARE_SETTINGS_FILE)
 
 docker-build:
 	${DOCKER_BUILD}
