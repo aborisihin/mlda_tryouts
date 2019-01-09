@@ -12,40 +12,41 @@ __all__ = ['parameters_space']
 
 
 parameters_space = {
-	'tfidf': 
-	{
-		'ngram_range': hp.choice('tfidf_ngram_range', [[1, 2], [1, 3], [2, 3]]),
-	},
-	'estimator': hp.choice('estimator', [
-		{
-			'object': LogisticRegression,
-			'params': 
-			{
-				'C': hp.uniform('lr_C', 0.0, 50.0),
-				'class_weight': hp.choice('lr_class_weight', ['balanced', None]),
-				'solver': hp.choice('lr_solver', ['liblinear', 'lbfgs']),
-				'n_jobs': -1
-			}
-		},
-		{
-			'object': SGDClassifier,
-			'params' : 
-			{
-				'loss': hp.choice('sgd_loss', ['hinge', 'log']),
-				'alpha': hp.uniform('sgd_alpha', 0.0, 50.0),
-				'class_weight': hp.choice('sgd_class_weight', ['balanced', None]),
-				'max_iter': 1000,
-				'n_jobs': -1
-			}
-		},
-		{
-			'object': LinearSVC,
-			'params': 
-			{
-				'loss': hp.choice('svc_loss', ['hinge', 'squared_hinge']),
-				'C': hp.uniform('svc_C', 0.0, 50.0),
-				'class_weight': hp.choice('svc_class_weight', ['balanced', None]),
-			}
-		}
-	])
+    'tfidf':
+    {
+        'ngram_range': hp.choice('tfidf_ngram_range', [[1, 2], [1, 3], [2, 3]]),
+    },
+    'classifier': hp.choice('classifier', [
+        {
+            'object': LogisticRegression,
+            'params':
+            {
+                'C': hp.uniform('lr_C', 0.0, 50.0),
+                'class_weight': hp.choice('lr_class_weight', ['balanced', None]),
+                'solver': hp.choice('lr_solver', ['liblinear', 'lbfgs']),
+                'n_jobs': -1
+            }
+        },
+        {
+            'object': SGDClassifier,
+            'params':
+            {
+                'loss': hp.choice('sgd_loss', ['hinge', 'log']),
+                'alpha': hp.uniform('sgd_alpha', 0.0, 50.0),
+                'class_weight': hp.choice('sgd_class_weight', ['balanced', None]),
+                'max_iter': 1000,
+                'tol': 0.001,
+                'n_jobs': -1
+            }
+        },
+        {
+            'object': LinearSVC,
+            'params':
+            {
+                'loss': hp.choice('svc_loss', ['hinge', 'squared_hinge']),
+                'C': hp.uniform('svc_C', 0.0, 50.0),
+                'class_weight': hp.choice('svc_class_weight', ['balanced', None]),
+            }
+        }
+    ])
 }

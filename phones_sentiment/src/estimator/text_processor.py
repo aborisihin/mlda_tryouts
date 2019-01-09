@@ -2,12 +2,14 @@
 Contains reviews text processing class
 """
 
+import numpy as np
+
 from sklearn.base import TransformerMixin
 
 from pymystem3 import Mystem
 from string import punctuation
 
-__all__ = ['LemmatizeTextTransformer']
+__all__ = ['LemmatizeTextTransformer', 'TargetMarkupTransformer']
 
 
 class LemmatizeTextTransformer(TransformerMixin):
@@ -28,6 +30,21 @@ class LemmatizeTextTransformer(TransformerMixin):
             processed_X.append(processed_text)
 
         return processed_X
+
+    def fit(self, X, y=None):
+        return self
+
+
+class TargetMarkupTransformer(TransformerMixin):
+
+    def __init__(self):
+        pass
+
+    def transform(self, X):
+        X_copy = X.copy()
+        #X_copy['rank'] = X_copy[X_copy['rank'] != 3]
+        X_copy['target'] = (X_copy['rank'] <= 3).astype(np.int)
+        return X_copy
 
     def fit(self, X, y=None):
         return self

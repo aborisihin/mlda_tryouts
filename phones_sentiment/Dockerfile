@@ -33,6 +33,10 @@ RUN pip3 install --no-cache-dir --upgrade \
     pandas \
     scikit-learn \
     hyperopt \
+    pymystem3 \
     Flask \
     flask-bootstrap \
     Flask-WTF
+
+# pymystem3 init
+RUN python3 -c "import pymystem3; pymystem3.Mystem()"

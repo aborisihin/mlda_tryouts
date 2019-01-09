@@ -12,6 +12,6 @@
 
 	"model_fitting":
 	{
-		"hyperopt_max_evals": 25
+		"hyperopt_max_evals": 10
 	}
 }

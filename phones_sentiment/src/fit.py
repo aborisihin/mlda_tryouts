@@ -13,19 +13,16 @@ def main():
     parser.add_argument('--hyperopt_max_evals', type=int, required=True)
     args = parser.parse_args()
 
-    # объект model_fitter
-    fitter = HyperoptModelFitter(data_path='./../scrapped_data/yandex_mobile_reviews.csv',
-        param_space=parameters_space,
-        max_evals=args.hyperopt_max_evals)
-
-    # подбор параметров и сохранение объектов пайплайна
+    fitter = HyperoptModelFitter(data_path='./scrapped_data/yandex_mobile_reviews.csv',
+                                 param_space=parameters_space,
+                                 max_evals=args.hyperopt_max_evals)
+    print('start data preparing...')
+    fitter.prepare_data()
     print('start parameters search...')
     fitter.fit()
-
     print('best params:')
-    print(fitter.get_best_params())
-
-    fitter.save_model('./../model')
+    print(fitter.best_params)
+    fitter.save_model('./model')
     print('model saved!')
 
 
