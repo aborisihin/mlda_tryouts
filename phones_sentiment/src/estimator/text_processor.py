@@ -7,6 +7,8 @@ from sklearn.base import TransformerMixin
 from pymystem3 import Mystem
 from string import punctuation
 
+__all__ = ['LemmatizeTextTransformer']
+
 
 class LemmatizeTextTransformer(TransformerMixin):
 
