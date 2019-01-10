@@ -2,8 +2,6 @@
 Contains model predictor class
 """
 
-import os
-
 from sklearn.externals import joblib
 
 from estimator.text_processor import LemmatizeTextTransformer
@@ -13,12 +11,12 @@ __all__ = ['ModelPredictor']
 
 class ModelPredictor():
 
-    def __init__(self, model_dir):
+    def __init__(self, vectorizer_path, classifier_path):
         self.transformer = LemmatizeTextTransformer()
         print('load vectorizer...')
-        self.vectorizer = joblib.load(os.path.join(model_dir, 'vectorizer.pkl'))
+        self.vectorizer = joblib.load(vectorizer_path)
         print('load classifier...')
-        self.estimator = joblib.load(os.path.join(model_dir, 'classifier.pkl'))
+        self.estimator = joblib.load(classifier_path)
         print('done')
 
     def predict(self, text):

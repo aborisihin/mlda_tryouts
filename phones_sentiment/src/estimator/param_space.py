@@ -38,15 +38,6 @@ parameters_space = {
                 'tol': 0.001,
                 'n_jobs': -1
             }
-        },
-        {
-            'object': LinearSVC,
-            'params':
-            {
-                'loss': hp.choice('svc_loss', ['hinge', 'squared_hinge']),
-                'C': hp.uniform('svc_C', 0.0, 50.0),
-                'class_weight': hp.choice('svc_class_weight', ['balanced', None]),
-            }
         }
     ])
 }

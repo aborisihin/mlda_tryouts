@@ -22,7 +22,7 @@ model-fit:
 	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} python3 ./src/fit.py --hyperopt_max_evals $(HYPEROPT_MAX_EVALS)
 
 ui-run:
-	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} python3 ./src/ui/flask_ui.py
+	${DOCKER_RUN} -p 80:80 -w /app ${DOCKER_IMAGE} python3 ./src/ui/flask_ui.py
 
 bash-run:
 	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} /bin/bash
