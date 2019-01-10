@@ -1,6 +1,11 @@
 # mlda_tryouts
 Tryouts in machine learning and data analysis.
 
+* [phones_sentiment](./phones_sentiment)
+
+  Docker-based sentiment analysis (data gathering, model fitting, web-ui).<br>
+  Docker-решение анализа тональности текста (сбор данных, обучение, web-ui).<br>
+
 * [automl](./automl)
 
   AutoML system on table data.<br>
