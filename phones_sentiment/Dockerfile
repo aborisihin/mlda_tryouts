@@ -7,10 +7,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         software-properties-common \
         build-essential && \
-#        curl \
-#        swig \
-#        git \
-#        zip \ 
     rm -rf /var/lib/apt/lists/*
 
 # Python 3.6

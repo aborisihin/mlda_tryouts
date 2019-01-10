@@ -24,11 +24,11 @@ model-fit:
 ui-run:
 	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} python3 ./src/ui/flask_ui.py
 
+bash-run:
+	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} /bin/bash
+
 docker-build:
 	${DOCKER_BUILD}
 
 docker-push:
 	docker push ${DOCKER_IMAGE}
-
-docker-bash:
-	${DOCKER_RUN} -w /app ${DOCKER_IMAGE} /bin/bash

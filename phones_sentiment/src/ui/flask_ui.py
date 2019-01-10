@@ -1,8 +1,4 @@
 import os
-# import threading
-# import time
-# import webbrowser
-# import urllib
 
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
@@ -49,16 +45,6 @@ def index_page(text='', prediction_message=''):
 @app.route('/about', methods=['GET'])
 def bootstrap_test_page():
     return render_template('about.html')
-
-
-# def open_browser():
-#     while True:
-#         try:
-#             urllib.request.urlopen(url=SENTIMENT_URL)
-#             break
-#         except Exception as e:
-#             time.sleep(0.5)
-#     webbrowser.open(SENTIMENT_URL)
 
 
 if __name__ == '__main__':
