@@ -10,16 +10,16 @@
 
 ## Make-команды для работы
 
-`make scrapy-run` - запустить процесс сбора обучающей выборки (web scraping).<br>
-`make model-fit` - запустить процесс построения модели и подбора ее параметров.<br>
+`make scrapy-run` - запустить процесс сбора обучающей выборки (web scraping)<br>
+`make model-fit` - запустить процесс построения модели и подбора ее параметров<br>
 `make ui-run` - запустить пользовательский интерфейс (доступен по адресу http://127.0.0.1/estimator)<br>
-`make bash-run` - запустить терминал в Docker-контейнере.<br>
-`make docker-build` - сборка Docker-образа, используя конфигурационный файл [Dockerfile](./Dockerfile).<br>
-`make docker-push` - отправка Docker-образа на DockerHub.<br>
+`make bash-run` - запустить терминал в Docker-контейнере<br>
+`make docker-build` - сборка Docker-образа, используя конфигурационный файл [Dockerfile](./Dockerfile)<br>
+`make docker-push` - отправка Docker-образа на DockerHub<br>
 
 ## Описание файла настроек
 
-* [sentiment.json](./settings/sentiment.json)<br>
+[sentiment.json](./settings/sentiment.json)<br>
 `docker/image` - имя docker контейнера на DockerHub<br>
 `scrapping/start_page` - адрес стартовой страницы парсинга обучающей выборки<br>
 `scrapping/download_delay` - величина задержки (с) отправки запросов в процессе парсинга<br>
