@@ -1,6 +1,7 @@
 from scrapy.exceptions import DropItem
 
 
+# data validation pipeline
 class YMRValidatePipeline(object):
     def process_item(self, item, spider):
         if item['text'] and item['rank']:
@@ -9,6 +10,7 @@ class YMRValidatePipeline(object):
             raise DropItem("Missing review text or rank in {}".format(item))
 
 
+# check duplicates pipeline
 class YMRDuplicatesPipeline(object):
     def __init__(self):
         self.ids_seen = set()

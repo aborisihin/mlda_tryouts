@@ -23,10 +23,19 @@ class HyperoptModelFitter():
     используя средства библиотеки hyperopt.
 
     Args:
-    model_dir: Путь к директории модели
+    data_path (str): Путь к файлу с данными
+    param_space (dict): Словарь пространства поиска параметров
+    max_evals (int): Число итераций hyperopt
 
     Attributes:
-    model_dir (str): Путь к каталогу модели
+    data_path (str): Путь к файлу с данными
+    param_space (dict): Словарь пространства поиска параметров
+    max_evals (int): Число итераций hyperopt
+    best_params (dict): Подобранное лучшее сочетание параметров модели
+    vectorizer (obj): Объект векторизатора из подобранных параметров
+    classifier (obj): Объект классификатора из подобранных параметров
+    X (np.array): Обучающая выборка, нормализованные тексты отзывов
+    y (np.array): Обучающая выборка, целевая переменная
     """
 
     def __init__(self, data_path, param_space, max_evals):
@@ -38,12 +47,19 @@ class HyperoptModelFitter():
         self.classifier = None
 
     def prepare_data(self):
+        """Data preparing
+        Запуск процесса загрузки и подготовки данных. Производится разметка данных по целевой 
+        переменной и лемматизация текста отзывов.
+        """
         data = pd.read_csv(self.data_path)
         data = TargetMarkupTransformer().fit_transform(data)
         self.X = LemmatizeTextTransformer().fit_transform(data['text'])
         self.y = data['target']
 
     def fit(self):
+        """Start model fitting via hyperopt
+        Запуск процесса подборов параметров модели через hyperopt
+        """
         hyperopt_best_params = fmin(self.hyperopt_target_func, self.param_space,
                                     algo=tpe.suggest, max_evals=self.max_evals)
         self.best_params = space_eval(self.param_space, hyperopt_best_params)
@@ -53,6 +69,14 @@ class HyperoptModelFitter():
         self.classifier.fit(self.vectorizer.transform(self.X), self.y)
 
     def hyperopt_target_func(self, args):
+        """hyperopt target function
+        Целевая функция для ее минимизации через hyperopt. 
+        Выбранная метрика качества - обратное значение accuracy, посчитанное через 
+        кросс-валидацию по 3 фолдам.
+
+        Returns:
+            Значение минимизируемой функции
+        """
         vectorizer = TfidfVectorizer(**args['tfidf'])
         classifier = args['classifier']['object'](**args['classifier']['params'])
         return -1.0 * cross_val_score(classifier,
@@ -60,6 +84,9 @@ class HyperoptModelFitter():
                                       scoring='accuracy', cv=3, n_jobs=-1).mean()
 
     def save_model(self, model_dir):
+        """Model saving
+        Сохранение подобранных компонентов модели в файлы
+        """
         if self.vectorizer:
             joblib.dump(self.vectorizer, os.path.join(model_dir, 'vectorizer.pkl'))
         if self.classifier:

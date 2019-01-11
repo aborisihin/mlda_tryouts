@@ -7,6 +7,7 @@ import argparse
 from estimator.model_fitter import HyperoptModelFitter
 from estimator.param_space import parameters_space
 
+# путь к полученным через scrapy данным
 data_path = './scrapped_data/yandex_mobile_reviews.csv'
 
 
@@ -20,9 +21,11 @@ def main():
     parser.add_argument('--hyperopt_max_evals', type=int, required=True)
     args = parser.parse_args()
 
+    # объект фиттера модели
     fitter = HyperoptModelFitter(data_path=data_path,
                                  param_space=parameters_space,
                                  max_evals=args.hyperopt_max_evals)
+    
     print('start data preparing...')
     fitter.prepare_data()
     print('start parameters search...')
