@@ -13,6 +13,11 @@ __all__ = ['LemmatizeTextTransformer', 'TargetMarkupTransformer']
 
 
 class LemmatizeTextTransformer(TransformerMixin):
+    """ Lemmatize text transformer.
+    Класс реализует стандартное поведение sklearn transformer.
+    Выполняет предобработку текста отзыва: удаление символов пунктуации, приведение в нижний регистр,
+    лемматизация слов текста (сохраняя порядок слов).
+    """
 
     def __init__(self):
         pass
@@ -36,14 +41,20 @@ class LemmatizeTextTransformer(TransformerMixin):
 
 
 class TargetMarkupTransformer(TransformerMixin):
+    """ Target markup transformer.
+    Класс реализует стандартное поведение sklearn transformer.
+    Выполняет разметку датасета по целевой переменной. Отзывы с оценкой 3 удаляются из выборки (как
+    нейтральные), затем отзывам с оценкой 1 или 2 присваивается негативная метка, а с оценкой 
+    4 или 5 - позитивная метка.
+    """
 
     def __init__(self):
         pass
 
     def transform(self, X):
         X_copy = X.copy()
-        #X_copy['rank'] = X_copy[X_copy['rank'] != 3]
-        X_copy['target'] = (X_copy['rank'] <= 3).astype(np.int)
+        X_copy['rank'] = X_copy[X_copy['rank'] != 3]
+        X_copy['target'] = (X_copy['rank'] < 3).astype(np.int)
         return X_copy
 
     def fit(self, X, y=None):
