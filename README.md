@@ -6,11 +6,6 @@ Tryouts in machine learning and data analysis.
   Docker-based sentiment analysis (data gathering, model fitting, web-ui).<br>
   Docker-решение анализа тональности текста (сбор данных, обучение, web-ui).<br>
 
-* [automl](./automl)
-
-  AutoML system on table data.<br>
-  Система AutoML (автоматическое машинное обучение) на табличных данных.
-
 * ml_models_implementation
 
   Machine learning models implementation.
